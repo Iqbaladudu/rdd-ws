@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Damage Detection - Channels</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .status-dot.online { background: #22c55e; animation: pulse 1.5s infinite; }
+        .status-dot.connecting { background: #f59e0b; animation: pulse 0.5s infinite; }
+
+        @keyframes pulse { 50% { opacity: 0.5; } }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Channel Controls */
+        .channel-controls {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        input[type="text"] {
+            padding: 10px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            width: 200px;
+        }
+
+        input[type="text"]::placeholder { color: #64748b; }
+        input[type="text"]:focus { outline: none; border-color: #3b82f6; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Video Section */
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .video-grid { grid-template-columns: 1fr; }
+        }
+
+        .video-card {
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 16/10;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .video-card video,
+        .video-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .video-card .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            gap: 8px;
+        }
+
+        .placeholder-icon { font-size: 48px; opacity: 0.5; }
+
+        .video-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-value small {
+            font-size: 12px;
+            color: #64748b;
+            -webkit-text-fill-color: #64748b;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .card-body { padding: 16px 20px; }
+
+        /* Channel List */
+        .channel-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .channel-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        .channel-item:hover { background: rgba(255,255,255,0.1); }
+
+        .channel-info { display: flex; flex-direction: column; gap: 2px; }
+
+        .channel-id {
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .channel-meta {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .live-badge {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .offline-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 24px;
+            color: #64748b;
+        }
+
+        .empty-state-icon { font-size: 32px; margin-bottom: 8px; }
+
+        /* Detection List */
+        .detection-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .detection-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+
+        .detection-item:last-child { border-bottom: none; }
+
+        .detection-class { font-weight: 500; }
+
+        .detection-conf {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        canvas#captureCanvas { display: none; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🛣️</div>
+                <span class="logo-text">Road Damage Detection</span>
+            </div>
+            <div class="status-badge">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Offline</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="channel-controls">
+            <div class="control-row">
+                <div class="input-group">
+                    <label>Channel ID:</label>
+                    <input type="text" id="channelInput" placeholder="e.g., room-123">
+                </div>
+                <button class="btn btn-primary" id="broadcastBtn" onclick="startBroadcast()">
+                    📡 Broadcast
+                </button>
+                <button class="btn btn-success" id="watchBtn" onclick="startWatch()">
+                    👁️ Watch
+                </button>
+                <button class="btn btn-danger" id="stopBtn" onclick="stop()" disabled>
+                    ■ Stop
+                </button>
+                <button class="btn btn-secondary" onclick="refreshChannels()">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="video-section">
+                <div class="video-grid">
+                    <div class="video-card" id="cameraCard">
+                        <video id="localVideo" autoplay muted playsinline style="display:none;"></video>
+                        <div class="placeholder" id="cameraPlaceholder">
+                            <span class="placeholder-icon">📷</span>
+                            <span>Camera will appear here</span>
+                        </div>
+                        <span class="video-label"><span class="live-dot"></span> Camera</span>
+                    </div>
+                    <div class="video-card">
+                        <img id="resultImage" style="display:none;" alt="Detection">
+                        <div class="placeholder" id="resultPlaceholder">
+                            <span class="placeholder-icon">🔍</span>
+                            <span id="resultPlaceholderText">Processed result</span>
+                        </div>
+                        <span class="video-label">🎯 Detection</span>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="frameCount">0</div>
+                        <div class="metric-label">Frames</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="latency">0<small>ms</small></div>
+                        <div class="metric-label">Latency</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="fps">0<small>fps</small></div>
+                        <div class="metric-label">FPS</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="viewers">0</div>
+                        <div class="metric-label">Viewers</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📺 Active Channels</span>
+                        <span id="channelCount" style="color:#64748b;font-size:12px;">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="channel-list" id="channelList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📡</div>
+                                <div>No active channels</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🎯 Detections</span>
+                        <span id="detectionCount" style="color:#64748b;font-size:12px;">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="detection-list" id="detectionList">
+                            <div class="empty-state">No detections yet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📊 Session Info</span>
+                    </div>
+                    <div class="card-body" style="font-size:13px;color:#94a3b8;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <span>Channel:</span>
+                            <strong id="currentChannel" style="color:#fff;">—</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <span>Mode:</span>
+                            <strong id="currentMode" style="color:#fff;">—</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span>Total Detections:</span>
+                            <strong id="totalDetections" style="color:#22c55e;">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="captureCanvas"></canvas>
+
+    <script>
+        // Config
+        const API_BASE = window.location.origin;
+        const WS_BASE = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
+
+        // State
+        let ws = null;
+        let mediaStream = null;
+        let mode = null; // 'broadcast' | 'watch'
+        let channelId = null;
+        let frameCount = 0;
+        let totalDetections = 0;
+        let animationId = null;
+        let pendingFrames = 0;
+        let fpsTimestamps = [];
+        const maxPending = 3;
+        const targetFPS = 30;
+
+        // Elements
+        const localVideo = document.getElementById('localVideo');
+        const resultImage = document.getElementById('resultImage');
+        const captureCanvas = document.getElementById('captureCanvas');
+        const ctx = captureCanvas.getContext('2d');
+
+        // Fetch channels
+        async function refreshChannels() {
+            try {
+                const res = await fetch(`${API_BASE}/channels`);
+                const data = await res.json();
+                renderChannels(data.channels || []);
+            } catch (e) {
+                console.error('Failed to fetch channels:', e);
+            }
+        }
+
+        function renderChannels(channels) {
+            const list = document.getElementById('channelList');
+            document.getElementById('channelCount').textContent = channels.length;
+
+            if (channels.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📡</div>
+                        <div>No active channels</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = channels.map(ch => `
+                <div class="channel-item">
+                    <div class="channel-info">
+                        <div class="channel-id">
+                            ${ch.channel_id}
+                            ${ch.has_broadcaster 
+                                ? '<span class="live-badge">LIVE</span>' 
+                                : '<span class="offline-badge">Idle</span>'
+                            }
+                        </div>
+                        <div class="channel-meta">
+                            ${ch.viewer_count} viewer${ch.viewer_count !== 1 ? 's' : ''} · ${ch.frame_count} frames
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="watchChannel('${ch.channel_id}')" ${ws ? 'disabled' : ''}>
+                        Watch
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function watchChannel(id) {
+            document.getElementById('channelInput').value = id;
+            startWatch();
+        }
+
+        // Start broadcasting
+        async function startBroadcast() {
+            const id = document.getElementById('channelInput').value.trim();
+            if (!id) {
+                alert('Please enter a Channel ID');
+                return;
+            }
+
+            try {
+                setStatus('connecting', 'Connecting...');
+                
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 },
+                    audio: false
+                });
+
+                localVideo.srcObject = mediaStream;
+                localVideo.style.display = 'block';
+                document.getElementById('cameraPlaceholder').style.display = 'none';
+                await localVideo.play();
+
+                captureCanvas.width = localVideo.videoWidth;
+                captureCanvas.height = localVideo.videoHeight;
+
+                connectWebSocket(`${WS_BASE}/ws/broadcast/${id}`, 'broadcast', id);
+            } catch (err) {
+                console.error('Failed to start broadcast:', err);
+                setStatus('offline', 'Error');
+            }
+        }
+
+        // Start watching
+        function startWatch() {
+            const id = document.getElementById('channelInput').value.trim();
+            if (!id) {
+                alert('Please enter a Channel ID');
+                return;
+            }
+
+            setStatus('connecting', 'Connecting...');
+            document.getElementById('resultPlaceholderText').textContent = 'Waiting for broadcast...';
+            connectWebSocket(`${WS_BASE}/ws/watch/${id}`, 'watch', id);
+        }
+
+        // WebSocket connection
+        function connectWebSocket(url, newMode, id) {
+            ws = new WebSocket(url);
+            mode = newMode;
+            channelId = id;
+
+            ws.onopen = () => {
+                setStatus('online', mode === 'broadcast' ? 'Broadcasting' : 'Watching');
+                frameCount = 0;
+                pendingFrames = 0;
+                fpsTimestamps = [];
+
+                document.getElementById('broadcastBtn').disabled = true;
+                document.getElementById('watchBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('channelInput').disabled = true;
+                document.getElementById('currentChannel').textContent = channelId;
+                document.getElementById('currentMode').textContent = mode === 'broadcast' ? '📡 Broadcaster' : '👁️ Viewer';
+
+                if (mode === 'broadcast') {
+                    requestAnimationFrame(captureLoop);
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const res = JSON.parse(event.data);
+                handleResponse(res);
+            };
+
+            ws.onclose = () => {
+                setStatus('offline', 'Disconnected');
+                cleanup();
+            };
+
+            ws.onerror = () => {
+                setStatus('offline', 'Error');
+            };
+        }
+
+        // Handle response
+        function handleResponse(res) {
+            if (res.status === 'error') {
+                alert(res.error);
+                stop();
+                return;
+            }
+
+            if (res.status === 'connected') {
+                console.log('Connected to channel:', res.channel_id);
+                return;
+            }
+
+            if (res.status !== 'success') return;
+
+            pendingFrames = Math.max(0, pendingFrames - 1);
+            frameCount++;
+            document.getElementById('frameCount').textContent = frameCount;
+            document.getElementById('latency').innerHTML = `${res.latency_ms.toFixed(0)}<small>ms</small>`;
+            document.getElementById('viewers').textContent = res.viewer_count || 0;
+
+            // FPS calculation
+            const now = Date.now();
+            fpsTimestamps.push(now);
+            while (fpsTimestamps.length > 0 && now - fpsTimestamps[0] > 2000) {
+                fpsTimestamps.shift();
+            }
+            if (fpsTimestamps.length > 1) {
+                const fps = (fpsTimestamps.length - 1) / ((now - fpsTimestamps[0]) / 1000);
+                document.getElementById('fps').innerHTML = `${fps.toFixed(1)}<small>fps</small>`;
+            }
+
+            // Update image
+            if (res.processed_frame) {
+                resultImage.src = res.processed_frame;
+                resultImage.style.display = 'block';
+                document.getElementById('resultPlaceholder').style.display = 'none';
+            }
+
+            // Update detections
+            if (res.detections && res.detections.length > 0) {
+                totalDetections += res.detections.length;
+                document.getElementById('totalDetections').textContent = totalDetections;
+                document.getElementById('detectionCount').textContent = res.detections.length;
+                renderDetections(res.detections);
+            }
+        }
+
+        function renderDetections(detections) {
+            const list = document.getElementById('detectionList');
+            if (detections.length === 0) {
+                list.innerHTML = '<div class="empty-state">No detections yet</div>';
+                return;
+            }
+            list.innerHTML = detections.slice(0, 10).map(d => `
+                <div class="detection-item">
+                    <span class="detection-class">${d.class}</span>
+                    <span class="detection-conf">${(d.confidence * 100).toFixed(1)}%</span>
+                </div>
+            `).join('');
+        }
+
+        // Capture loop
+        function captureLoop() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (mode !== 'broadcast') return;
+
+            animationId = requestAnimationFrame(captureLoop);
+
+            if (pendingFrames >= maxPending) return;
+
+            ctx.drawImage(localVideo, 0, 0);
+            const b64 = captureCanvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+            ws.send(b64);
+            pendingFrames++;
+        }
+
+        // Stop
+        function stop() {
+            if (animationId) cancelAnimationFrame(animationId);
+            if (ws) ws.close();
+            cleanup();
+        }
+
+        function cleanup() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+
+            localVideo.srcObject = null;
+            localVideo.style.display = 'none';
+            document.getElementById('cameraPlaceholder').style.display = 'flex';
+            resultImage.style.display = 'none';
+            document.getElementById('resultPlaceholder').style.display = 'flex';
+            document.getElementById('resultPlaceholderText').textContent = 'Processed result';
+
+            document.getElementById('broadcastBtn').disabled = false;
+            document.getElementById('watchBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('channelInput').disabled = false;
+            document.getElementById('currentChannel').textContent = '—';
+            document.getElementById('currentMode').textContent = '—';
+
+            ws = null;
+            mode = null;
+            channelId = null;
+            refreshChannels();
+        }
+
+        function setStatus(status, text) {
+            const dot = document.getElementById('statusDot');
+            const txt = document.getElementById('statusText');
+            dot.className = 'status-dot ' + status;
+            txt.textContent = text;
+        }
+
+        // Initial load
+        refreshChannels();
+        setInterval(refreshChannels, 5000);
+    </script>
+</body>
+</html>
