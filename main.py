@@ -386,14 +386,23 @@ def process_frame(frame: np.ndarray, model_key: str = None):
     Returns:
         Tuple of (annotated_frame, detections_list)
     """
-    # Select model
+    # Select model and determine the model key
     if model_key and model_key in models:
         selected_model = models[model_key]
+        current_model_key = model_key
     else:
         selected_model = default_model
+        current_model_key = default_model_key
+    
+    # TFLite and TensorRT models are compiled with fixed input size (640x640)
+    # Only PyTorch models can use dynamic input sizes
+    if current_model_key.startswith(("tflite", "tfrt")):
+        imgsz = 640  # Fixed size for compiled models
+    else:
+        imgsz = 480  # Smaller size for faster inference on PyTorch
     
     # Run inference with GPU if available
-    results = selected_model(frame, device=DEVICE, verbose=False, imgsz=480)
+    results = selected_model(frame, device=DEVICE, verbose=False, imgsz=imgsz)
     result = results[0]
     annotated_frame = result.plot()
     
